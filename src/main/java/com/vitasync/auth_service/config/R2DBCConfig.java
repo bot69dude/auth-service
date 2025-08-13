@@ -15,8 +15,14 @@ import java.time.Duration;
 @Configuration
 public class R2DBCConfig {
 
-    @Value("${DB_URL}")
-    private String dbUrl;
+    @Value("${DB_HOST}")
+    private String dbHost;
+
+    @Value("${DB_PORT}")
+    private String dbPort;
+
+    @Value("${DB_NAME}")
+    private String dbName;
 
     @Value("${DB_USERNAME}")
     private String dbUsername;
@@ -28,9 +34,9 @@ public class R2DBCConfig {
     public ConnectionFactory connectionFactory() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
             .option(DRIVER, "postgresql")
-            .option(HOST, dbUrl.split(":")[0])
-            .option(PORT, Integer.parseInt(dbUrl.split(":")[1].split("/")[0]))
-            .option(DATABASE, dbUrl.split("/")[1])
+            .option(HOST, dbHost)
+            .option(PORT, Integer.parseInt(dbPort))
+            .option(DATABASE, dbName)
             .option(USER, dbUsername)
             .option(PASSWORD, dbPassword)
             .option(SSL, true)
