@@ -44,7 +44,8 @@ public class SecurityConfig {
                         // Public endpoints for authentication
                         .pathMatchers("/auth/register", "/auth/login", "/auth/refresh").permitAll()
                         
-                        // Health check and actuator endpoints
+                        // Health check and info endpoints
+                        .pathMatchers("/auth/health", "/auth/info").permitAll()
                         .pathMatchers("/actuator/**", "/health").permitAll()
                         
                         // API documentation endpoints
