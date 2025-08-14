@@ -6,6 +6,8 @@ import com.vitasync.auth_service.dto.RegisterRequest;
 import com.vitasync.auth_service.model.User;
 import com.vitasync.auth_service.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
  */
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -50,7 +53,10 @@ public class AuthService {
      */
     public Mono<AuthResponse> login(LoginRequest request) {
         return userRepository.findByEmail(request.getEmail())
-                .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.warn("Login failed: user not found for email={}", request.getEmail());
+                    return Mono.error(new RuntimeException("User not found"));
+                }))
                 .flatMap(user -> validatePassword(request.getPassword(), user))
                 .flatMap(user -> updateLastLoginAndGenerateResponse(user));
     }
@@ -164,9 +170,11 @@ public class AuthService {
         return Mono.fromCallable(() -> passwordEncoder.matches(rawPassword, user.getPasswordHash()))
                 .flatMap(matches -> {
                     if (!matches) {
+                        log.warn("Login failed: invalid password for userId={}", user.getId());
                         return Mono.error(new RuntimeException("Invalid password"));
                     }
                     if (!user.getIsActive()) {
+                        log.warn("Login blocked: account deactivated for userId={}", user.getId());
                         return Mono.error(new RuntimeException("Account is deactivated"));
                     }
                     return Mono.just(user);

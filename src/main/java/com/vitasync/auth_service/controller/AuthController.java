@@ -54,6 +54,17 @@ public class AuthController {
     }
 
     /**
+     * Test login endpoint
+     * POST /auth/login-test
+     */
+    @PostMapping("/login-test")
+    public Mono<ResponseEntity<AuthResponse>> loginTest(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request)
+                .map(authResponse -> ResponseEntity.ok(authResponse))
+                .onErrorResume(this::handleError);
+    }
+
+    /**
      * Refresh JWT access token
      * POST /auth/refresh
      */
@@ -76,7 +87,7 @@ public class AuthController {
      */
     @GetMapping("/validate")
     public Mono<ResponseEntity<Map<String, Object>>> validateToken(
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = jwtTokenService.extractTokenFromHeader(authHeader);
         
@@ -91,7 +102,7 @@ public class AuthController {
                             "valid", true,
                             "userId", user.getId(),
                             "email", user.getEmail(),
-                            "role", user.getRole().name(),
+                            "role", user.getRole(),
                             "isVerified", user.getIsVerified()
                     );
                     return ResponseEntity.ok(response);
@@ -189,14 +200,28 @@ public class AuthController {
     private <T> Mono<ResponseEntity<T>> handleError(Throwable error) {
         String message = error.getMessage();
         
-        if (message.contains("already exists")) {
-            return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build());
-        } else if (message.contains("not found")) {
-            return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-        } else if (message.contains("Invalid") || message.contains("password")) {
-            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
-        } else {
-            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
-        }
+    if (message != null && message.contains("already exists")) {
+        @SuppressWarnings("unchecked")
+        T body = (T) Map.of(
+            "error", "User already exists",
+            "code", "USER_EXISTS"
+        );
+        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(body));
+    } else if (message != null && (message.contains("Invalid") || message.contains("password") || message.contains("not found") || message.contains("deactivated"))) {
+        // Generic message to avoid user enumeration
+        @SuppressWarnings("unchecked")
+        T body = (T) Map.of(
+            "error", "Invalid credentials",
+            "code", "AUTH_FAILED"
+        );
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body));
+    } else {
+        @SuppressWarnings("unchecked")
+        T body = (T) Map.of(
+            "error", "Internal server error",
+            "code", "SERVER_ERROR"
+        );
+        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body));
+    }
     }
 }

@@ -13,6 +13,11 @@ public class AuthResponse {
     private String refreshToken;
     private Long expiresIn;
     private UserInfo user;
+    
+    // Alias for compatibility
+    public String getAccessToken() {
+        return token;
+    }
 
     // Constructors
     public AuthResponse() {}

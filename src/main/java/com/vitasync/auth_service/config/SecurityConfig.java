@@ -3,6 +3,7 @@ package com.vitasync.auth_service.config;
 import com.vitasync.auth_service.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -42,14 +43,24 @@ public class SecurityConfig {
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
                 .authorizeExchange(exchanges -> exchanges
                         // Public endpoints for authentication
-                        .pathMatchers("/auth/register", "/auth/login", "/auth/refresh").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/validate").permitAll()
+                        
+                        // Application endpoints - JWT validation handled at controller level
+                        .pathMatchers("/auth/profile").permitAll()
+                        .pathMatchers("/auth/user/**").permitAll() // Inter-service, protected by API key filter
                         
                         // Health check and info endpoints
-                        .pathMatchers("/auth/health", "/auth/info").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/health").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/info").permitAll()
                         .pathMatchers("/actuator/**", "/health").permitAll()
                         
                         // API documentation endpoints
-                        .pathMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .pathMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
+                        .pathMatchers("/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
+                        .pathMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                         
                         // Admin-only endpoints
                         .pathMatchers("/auth/admin/**").hasRole("ADMIN")
