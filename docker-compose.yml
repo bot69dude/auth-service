@@ -23,4 +23,5 @@ services:
 
 networks:
   default:
-    name: vitasync-network
+    name: ai_for_good_vitasync-network
+    external: true

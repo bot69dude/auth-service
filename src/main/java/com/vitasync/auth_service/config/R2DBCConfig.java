@@ -39,7 +39,7 @@ public class R2DBCConfig {
             .option(DATABASE, dbName)
             .option(USER, dbUsername)
             .option(PASSWORD, dbPassword)
-            .option(SSL, true)
+            .option(SSL, false)
             .build();
 
         ConnectionFactory connectionFactory = ConnectionFactories.get(options);

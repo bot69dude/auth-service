@@ -200,6 +200,10 @@ public class AuthController {
     private <T> Mono<ResponseEntity<T>> handleError(Throwable error) {
         String message = error.getMessage();
         
+        // Log the full error for debugging
+        System.err.println("ERROR in AuthController: " + error.getClass().getSimpleName() + " - " + message);
+        error.printStackTrace();
+        
     if (message != null && message.contains("already exists")) {
         @SuppressWarnings("unchecked")
         T body = (T) Map.of(
@@ -218,8 +222,9 @@ public class AuthController {
     } else {
         @SuppressWarnings("unchecked")
         T body = (T) Map.of(
-            "error", "Internal server error",
-            "code", "SERVER_ERROR"
+            "error", "Internal server error: " + message,
+            "code", "SERVER_ERROR",
+            "details", error.getClass().getSimpleName()
         );
         return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body));
     }
